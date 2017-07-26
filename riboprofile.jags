@@ -1,0 +1,33 @@
+model {
+	
+	for(i in 1:N){
+
+		# assuming indepdence between observations for each gene given cluster label
+		ld[i,1] <- log(dexp(R[i,1],lambda)) + log(dexp(R[i,2],lambda)) + log(dexp(R[i,3],lambda))
+		ld[i,2] <- log(dlnorm(log(R[i,1]),muStar,tauStar)) + log(dlnorm(log(R[i,2]),muStar,tauStar)) + log(dlnorm(log(R[i,3]),muStar,tauStar))
+
+
+		labels[i] ~ dcat(pis)
+
+		density[i] <- exp(ld[i,labels[i]] - sum(ld[i,]))
+
+		# "ones trick" from Matthew Denwood, Jens Preussner
+		# http://jenzopr.github.io/stats/2016/04/15/jags-finite-component-mixture.html
+		
+		ones[i] ~ dbern(density[i])
+
+	}
+
+	muStar <- 2*log(mu) - (1/2)*log( (1/tau) + (mu^2) )
+	tauStar <- 1/( log( ( (1/tau) + (mu^2) )/(mu^2) ) )
+
+	# elicit priors here
+	pis ~ ddirch(c(1,1))
+	# choose prior params such that prior mean = 0.4605237, corresponds to Pr(R > 5.0) ~ 0.1
+	# also subject to Pr(lambda < 0.2302344) ~ 0.1, corresponds to Pr(R > 10.0) ~ 0.1
+	lambda ~ dgamma(5.317999,11.546939)
+	# centered at mean of all data - precision chosen s.t. Pr(mu < 5) ~ 0.1
+	mu ~ dnorm(281.0039,1/(215.3669^2))
+	tau ~ dunif(1/(5000^2),1)
+
+}

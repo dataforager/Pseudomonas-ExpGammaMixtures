@@ -1,0 +1,20 @@
+model{
+for(i in 1:N){
+# assuming indepdence between observations for each gene given cluster label
+ld_exp[i] <- logdensity.exp(R[i,1],lambda) + logdensity.exp(R[i,2],lambda) + logdensity.exp(R[i,3],lambda)
+ld_gamma[i] <- logdensity.gamma(R[i,1],alpha,beta) + logdensity.gamma(R[i,2],alpha,beta) + logdensity.gamma(R[i,3],alpha,beta)
+density[i] <- exp(ld_exp[i]*labels[i] + ld_gamma[i]*(1-labels[i]))
+# 'ones trick' from Matthew Denwood, Jens Preussner
+# http://jenzopr.github.io/stats/2016/04/15/jags-finite-component-mixture.html
+ones[i] ~ dbern(density[i])
+labels[i] ~ dbern(prob)
+}
+# elicit priors here
+prob ~ dbeta(1,1)
+# choose prior params such that prior mean = 0.4605237, corresponds to Pr(R > 5.0) ~ 0.1
+# also subject to Pr(lambda < 0.2302344) ~ 0.1, corresponds to Pr(R > 10.0) ~ 0.1
+lambda ~ dgamma(5.317999,11.546939)
+# centered at mean of all data - precision chosen s.t. Pr(mu < 5) ~ 0.1
+alpha ~ dunif(1/(10000^2),325.050493269999)
+beta ~ dunif(1/(10000^2),1.1851294381459)
+}
